@@ -1,0 +1,14 @@
+# Ignore everything in the data folder
+data/*
+
+# But don't ignore the results folder
+!data/results/
+
+# Ensure contents inside results are also not ignored
+!data/results/**
+
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
