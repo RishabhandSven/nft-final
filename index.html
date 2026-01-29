@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Wash Trading Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            opacity: 0.95;
+        }
+
+        .health-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .health-status.healthy {
+            background-color: rgba(68, 255, 68, 0.3);
+            color: #44ff44;
+            border: 2px solid #44ff44;
+        }
+
+        .health-status.unhealthy {
+            background-color: rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+            border: 2px solid #ff4444;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section,
+        .result-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        button[type="submit"] {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button[type="submit"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px 14px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .preset-btn.safe {
+            border-color: #44ff44;
+            color: #44ff44;
+        }
+
+        .preset-btn.safe:hover {
+            background-color: rgba(68, 255, 68, 0.1);
+        }
+
+        .preset-btn.suspicious {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        .preset-btn.suspicious:hover {
+            background-color: rgba(255, 170, 0, 0.1);
+        }
+
+        .preset-btn.highrisk {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .preset-btn.highrisk:hover {
+            background-color: rgba(255, 68, 68, 0.1);
+        }
+
+        .result {
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.error {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            color: white;
+        }
+
+        .result.error h3 {
+            margin-bottom: 10px;
+        }
+
+        .result.high-risk {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            color: white;
+        }
+
+        .result.safe {
+            background: linear-gradient(135deg, #44ff44 0%, #00cc00 100%);
+            color: white;
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .result-details {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item .label {
+            font-weight: 600;
+        }
+
+        .result-item .value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .risk-bar {
+            height: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .risk-fill {
+            height: 100%;
+            transition: width 0.5s ease-out;
+            border-radius: 10px;
+        }
+
+        .result.placeholder {
+            background: #f5f5f5;
+            color: #999;
+            text-align: center;
+            padding: 60px 30px;
+            border: 2px dashed #ddd;
+        }
+
+        .result.placeholder p {
+            font-size: 1.05rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 NFT Wash Trading Detection</h1>
+        <p>AI-powered anomaly detection for suspicious NFT transactions</p>
+        <div id="healthStatus" class="health-status unhealthy">
+            Backend: ⏳ Checking...
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="form-section">
+            <h2>Transaction Details</h2>
+            <form id="analysisForm">
+                <div class="form-group">
+                    <label>Price (USD)</label>
+                    <input type="number" name="price_usd" value="5000" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Time Since Last Trade (seconds)</label>
+                    <input type="number" name="time_since_last_trade" value="3600" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Seller Fee (USD)</label>
+                    <input type="number" name="sellerFee_amount" value="0" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Buyer Address</label>
+                    <input type="text" name="buyer_address" value="0xBuyer001" placeholder="0x..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>Seller Address</label>
+                    <input type="text" name="seller_address" value="0xSeller001" placeholder="0x..." required>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit">Analyze Transaction</button>
+                    <div class="preset-buttons">
+                        <button type="button" class="preset-btn safe" onclick="loadPreset('safe')">Safe Example</button>
+                        <button type="button" class="preset-btn suspicious" onclick="loadPreset('suspicious')">Suspicious</button>
+                        <button type="button" class="preset-btn highrisk" onclick="loadPreset('highrisk')">High Risk</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="result-section">
+            <div id="resultContainer" class="result placeholder">
+                <p>Fill in transaction details and click "Analyze Transaction" to get started</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        // Check backend health on load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                const statusEl = document.getElementById('healthStatus');
+                if (data.status === 'ok' && data.model_loaded) {
+                    statusEl.className = 'health-status healthy';
+                    statusEl.textContent = 'Backend: ✓ Connected';
+                } else {
+                    statusEl.className = 'health-status unhealthy';
+                    statusEl.textContent = 'Backend: ✗ Not Ready';
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('healthStatus');
+                statusEl.className = 'health-status unhealthy';
+                statusEl.textContent = 'Backend: ✗ Offline';
+            }
+        });
+
+        function loadPreset(preset) {
+            const presets = {
+                safe: {
+                    price_usd: 5000,
+                    time_since_last_trade: 86400, // 1 day
+                    sellerFee_amount: 250,
+                    buyer_address: '0xBuyer001',
+                    seller_address: '0xSeller001',
+                },
+                suspicious: {
+                    price_usd: 5000,
+                    time_since_last_trade: 300, // 5 minutes
+                    sellerFee_amount: 50,
+                    buyer_address: '0xBuyer002',
+                    seller_address: '0xSeller002',
+                },
+                highrisk: {
+                    price_usd: 50000,
+                    time_since_last_trade: 30, // 30 seconds
+                    sellerFee_amount: 0,
+                    buyer_address: '0xBuyer003',
+                    seller_address: '0xSeller003',
+                },
+            };
+
+            const form = document.getElementById('analysisForm');
+            Object.keys(presets[preset]).forEach(key => {
+                form.elements[key].value = presets[preset][key];
+            });
+        }
+
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                price_usd: parseFloat(formData.get('price_usd')),
+                time_since_last_trade: parseInt(formData.get('time_since_last_trade')),
+                sellerFee_amount: parseFloat(formData.get('sellerFee_amount')),
+                buyer_address: formData.get('buyer_address'),
+                seller_address: formData.get('seller_address'),
+            };
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Analyzing...';
+
+            try {
+                const response = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const result = await response.json();
+                displayResult(result);
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Analyze Transaction';
+            }
+        });
+
+        function displayResult(result) {
+            const container = document.getElementById('resultContainer');
+            const riskPercent = (result.risk_score * 100).toFixed(2);
+            const fillWidth = Math.max(0, Math.min(100, (result.risk_score + 1) * 50));
+            const fillColor = result.is_wash_trade ? '#ff4444' : '#44ff44';
+
+            container.className = `result ${result.status.toLowerCase().replace(' ', '-')}`;
+            container.innerHTML = `
+                <h3>${result.is_wash_trade ? '⚠️ WASH TRADE DETECTED' : '✅ TRANSACTION SAFE'}</h3>
+                <div class="result-details">
+                    <div class="result-item">
+                        <span class="label">Risk Assessment:</span>
+                        <span class="value">${result.status}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Risk Score:</span>
+                        <span class="value">${riskPercent}%</span>
+                    </div>
+                    <div class="risk-bar">
+                        <div 
+                            class="risk-fill"
+                            style="width: ${fillWidth}%; background-color: ${fillColor};"
+                        ></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayError(error) {
+            const container = document.getElementById('resultContainer');
+            container.className = 'result error';
+            container.innerHTML = `
+                <h3>❌ Error</h3>
+                <p>${error}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
