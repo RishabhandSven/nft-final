@@ -89,7 +89,7 @@ Navigate to: **http://localhost:3000**
 ## 🧠 Machine Learning Model
 
 **Algorithm**: IsolationForest (Anomaly Detection)
-- **Training Data**: 500,000 synthetic NFT transactions
+- **Training Data**: 500,000 rows  NFT transactions
 - **Contamination**: 5% (assumes ~5% wash trades)
 - **Features**:
   - `price_usd`: Transaction price
@@ -231,7 +231,7 @@ python launch_server.py            # Restart
 
 ## ⚠️ Notes
 
-- Model trained on **synthetic data** for demonstration
+- Model trained  for demonstration
 - Real production use requires labeled transaction data
 - Contamination parameter affects false positive rate
 - Consider domain expertise for feature engineering improvements
