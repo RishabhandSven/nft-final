@@ -11,7 +11,7 @@ CHUNK_SIZE = 10_000     # Write to disk every 10k rows to save RAM
 
 # --- SETUP MOCK USERS & CONTRACTS ---
 # We reuse these to create realistic trading history patterns
-print("👥 Generating Mock Users & Collections...")
+print("[*] Generating Mock Users & Collections...")
 USERS = [f"0x{secrets.token_hex(20)}" for _ in range(5000)]  # 5,000 unique traders
 CONTRACTS = [f"0x{secrets.token_hex(20)}" for _ in range(50)] # 50 NFT collections
 
@@ -25,15 +25,12 @@ def generate_chunk(num_rows, start_id):
         seller = random.choice(USERS)
         contract = random.choice(CONTRACTS)
         
-        # 2. Inject Wash Trading Logic (5% chance)
-        # If wash trade, force Seller to be someone who bought this token before
-        is_wash = random.random() < 0.05
+        # 2. Inject Wash Trading Logic (25% chance)
+        # Circular trade = same buyer and seller (wash trading pattern)
+        is_wash = random.random() < 0.25
         if is_wash:
-            # Simple circular pattern: A -> B (Normal), B -> A (Wash)
-            # In a real generator, we'd track ownership, but here we force the pattern
-            temp = buyer
-            buyer = seller
-            seller = temp
+            # Make buyer == seller for circular/wash trade
+            seller = buyer  # Force circular pattern
             price = random.uniform(5.0, 50.0) # Suspiciously high price
         else:
             price = random.uniform(0.01, 2.0) # Normal price
@@ -73,7 +70,7 @@ def generate_chunk(num_rows, start_id):
     return pd.DataFrame(data)
 
 def main():
-    print(f"🚀 Starting Generation of {TOTAL_ROWS} rows...")
+    print(f"[*] Starting Generation of {TOTAL_ROWS} rows...")
     
     # Ensure directory exists
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
@@ -99,7 +96,7 @@ def main():
         total_generated += batch_size
         print(f"   Saved {total_generated:,} / {TOTAL_ROWS:,} rows...")
 
-    print(f"✅ DONE! Dataset saved to: {OUTPUT_FILE}")
+    print(f"[OK] DONE! Dataset saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()

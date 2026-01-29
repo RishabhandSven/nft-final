@@ -1,0 +1,15 @@
+{
+  "roc_auc": 0.9787274436033968,
+  "average_precision": 0.8533969043403706,
+  "precision": 0.9047999680268575,
+  "recall": 0.9113195394895741,
+  "f1": 0.9080480516615527,
+  "specificity": 0.9683067670773571,
+  "sensitivity": 0.9113195394895741,
+  "sample_size": 100000,
+  "positive_rate": 0.24842,
+  "true_positives": 22639,
+  "true_negatives": 72776,
+  "false_positives": 2382,
+  "false_negatives": 2203
+}

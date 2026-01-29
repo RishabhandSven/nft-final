@@ -38,7 +38,7 @@ def train_model():
     # Train Isolation Forest
     # contamination=0.05 -> We assume roughly 5% of trades might be wash trades
     print("🤖 Training Isolation Forest (Finding Anomalies)...")
-    model = IsolationForest(contamination=0.05, random_state=42, n_jobs=-1)
+    model = IsolationForest(contamination=0.25, n_estimators=200, random_state=42, n_jobs=-1)
     model.fit(X_scaled)
 
     # Save artifacts

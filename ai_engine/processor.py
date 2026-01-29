@@ -60,6 +60,12 @@ def process_huge_dataset():
         # Flag circular trades (Buyer == Seller)
         chunk['is_circular'] = (chunk['buyerAddress'] == chunk['sellerAddress']).astype(int)
         
+        # Add velocity (price change rate), fee ratio, repeat buyers/sellers, etc.
+        chunk['price_volatility'] = chunk.groupby('tokenId')['price_usd'].transform('std')
+        chunk['fee_ratio'] = chunk['sellerFee_amount'] / (chunk['price_usd'] + 1)
+        chunk['buyer_frequency'] = chunk.groupby('buyerAddress')['buyerAddress'].transform('count')
+        chunk['seller_frequency'] = chunk.groupby('sellerAddress')['sellerAddress'].transform('count')
+        
         # 4. Save small training file
         ai_data = chunk[['price_usd', 'time_since_last_trade', 'sellerFee_amount', 'is_circular']]
         
