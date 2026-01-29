@@ -251,7 +251,7 @@ This project is provided as-is for educational and research purposes.
 
 ## 👤 Author
 
-Created with ❤️ for NFT security research
+Created by Rishabh with ❤️ for NFT security research
 
 ---
 
