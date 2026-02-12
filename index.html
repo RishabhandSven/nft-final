@@ -114,6 +114,13 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
         .button-group {
             display: flex;
             flex-direction: column;
@@ -318,6 +325,13 @@
                 </div>
 
                 <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="was_holding_previously" id="was_holding_previously" value="1">
+                        <span>⚠️ History Alert: Buyer previously owned this token?</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
                     <label>Buyer Address</label>
                     <input type="text" name="buyer_address" value="0xBuyer001" placeholder="0x..." required>
                 </div>
@@ -376,6 +390,7 @@
                     sellerFee_amount: 250,
                     buyer_address: '0xBuyer001',
                     seller_address: '0xSeller001',
+                    was_holding_previously: false,
                 },
                 suspicious: {
                     price_usd: 5000,
@@ -383,6 +398,7 @@
                     sellerFee_amount: 50,
                     buyer_address: '0xBuyer002',
                     seller_address: '0xSeller002',
+                    was_holding_previously: false,
                 },
                 highrisk: {
                     price_usd: 50000,
@@ -390,12 +406,19 @@
                     sellerFee_amount: 0,
                     buyer_address: '0xBuyer003',
                     seller_address: '0xSeller003',
+                    was_holding_previously: true,
                 },
             };
 
             const form = document.getElementById('analysisForm');
-            Object.keys(presets[preset]).forEach(key => {
-                form.elements[key].value = presets[preset][key];
+            const p = presets[preset];
+            Object.keys(p).forEach(key => {
+                if (key === 'was_holding_previously') {
+                    const el = document.getElementById('was_holding_previously');
+                    if (el) el.checked = !!p[key];
+                } else if (form.elements[key]) {
+                    form.elements[key].value = p[key];
+                }
             });
         }
 
@@ -403,12 +426,14 @@
             e.preventDefault();
             
             const formData = new FormData(e.target);
+            const wasHoldingCheckbox = document.getElementById('was_holding_previously');
             const data = {
                 price_usd: parseFloat(formData.get('price_usd')),
                 time_since_last_trade: parseInt(formData.get('time_since_last_trade')),
                 sellerFee_amount: parseFloat(formData.get('sellerFee_amount')),
                 buyer_address: formData.get('buyer_address'),
                 seller_address: formData.get('seller_address'),
+                was_holding_previously: wasHoldingCheckbox && wasHoldingCheckbox.checked ? 1 : 0,
             };
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -425,7 +450,11 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 const result = await response.json();
-                displayResult(result);
+                if (result.error) {
+                    displayError(result.error);
+                } else {
+                    displayResult(result);
+                }
             } catch (error) {
                 displayError(error.message);
             } finally {

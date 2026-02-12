@@ -1,0 +1,15 @@
+{
+  "sample_size": 21254,
+  "flagged_as_high_risk": 200,
+  "flag_rate_pct": 0.94,
+  "contamination_target": 0.01,
+  "decision_score_min": -0.13248258115378142,
+  "decision_score_max": 0.30635670068506354,
+  "decision_score_mean": 0.23988039062312908,
+  "flagged_price_usd_mean": 3516.2676500000002,
+  "flagged_price_usd_median": 3557.1499999999996,
+  "safe_price_usd_mean": 1411.5245378550394,
+  "safe_price_usd_median": 1356.275,
+  "supervised_eval": false,
+  "note": "No circular trades in dataset; cannot compute precision/recall/F1"
+}

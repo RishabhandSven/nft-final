@@ -7,8 +7,8 @@ from sklearn.preprocessing import StandardScaler
 # --- SMART PATH CONFIGURATION ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(SCRIPT_DIR, "..", "data", "training_chunk.csv")
-MODEL_PATH = os.path.join(SCRIPT_DIR, "..", "data", "results", "wash_trading_brain.pkl")
-SCALER_PATH = os.path.join(SCRIPT_DIR, "..", "data", "results", "scaler.pkl")
+MODEL_PATH = os.path.join(SCRIPT_DIR, "..", "data", "results", "wash_trading_brain_v2.pkl")
+SCALER_PATH = os.path.join(SCRIPT_DIR, "..", "data", "results", "scaler_v2.pkl")
 
 # Ensure output directory exists
 os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
@@ -20,11 +20,11 @@ def train_model():
         print("❌ Error: Training data not found. Run processor.py first!")
         return
 
-    # Load data (filling NaNs with 0 just in case)
-    df = pd.read_csv(DATA_PATH).fillna(0)
+    # Load with float32 to reduce RAM on large datasets
+    df = pd.read_csv(DATA_PATH, dtype={c: 'float32' for c in ['price_usd', 'time_since_last_trade', 'sellerFee_amount', 'is_circular', 'was_holding_previously']}).fillna(0)
     
     # Define features (MUST match what api.py expects)
-    features = ['price_usd', 'time_since_last_trade', 'sellerFee_amount', 'is_circular']
+    features = ['price_usd', 'time_since_last_trade', 'sellerFee_amount', 'is_circular', 'was_holding_previously']
     
     print(f"📊 Training on {len(df)} rows with features: {features}")
     
@@ -36,9 +36,9 @@ def train_model():
     X_scaled = scaler.fit_transform(X)
 
     # Train Isolation Forest
-    # contamination=0.05 -> We assume roughly 5% of trades might be wash trades
+    # contamination=0.01 -> Real dataset is mostly safe; 1% anomalies is realistic
     print("🤖 Training Isolation Forest (Finding Anomalies)...")
-    model = IsolationForest(contamination=0.25, n_estimators=200, random_state=42, n_jobs=-1)
+    model = IsolationForest(contamination=0.01, n_estimators=200, random_state=42, n_jobs=6)
     model.fit(X_scaled)
 
     # Save artifacts

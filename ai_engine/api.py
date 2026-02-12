@@ -49,7 +49,7 @@ if model is None:
     if os.path.exists(DATA_PATH):
         df = pd.read_csv("data/training_chunk.csv").fillna(0)
         # Use the columns produced by the processor: price_usd, time_since_last_trade, sellerFee_amount, is_circular
-        feature_cols = ['price_usd', 'time_since_last_trade', 'sellerFee_amount', 'is_circular']
+        feature_cols = ['price_usd', 'time_since_last_trade', 'sellerFee_amount', 'is_circular', 'was_holding_previously']
         # Fallback if older CSV uses different column names
         for alt in (['price', 'time_since_last_trade', 'sellerFee_amount'], feature_cols):
             if all(c in df.columns for c in alt):
@@ -91,6 +91,7 @@ class AnalyzeRequest(BaseModel):
     sellerFee_amount: float
     buyer_address: str
     seller_address: str
+    was_holding_previously: float = 0.0  # Optional; 1 if buyer sold this token in past 10 trades
 
 @app.post("/detect_wash_trade")
 def analyze(tx: Transaction):
@@ -99,9 +100,9 @@ def analyze(tx: Transaction):
     features = np.array([[tx.price, tx.time_since_last_trade, tx.sellerFee_amount]])
     # If a scaler is available, we need to expand to a 4th feature (is_circular=0) for compatibility
     if scaler is not None:
-        # Append is_circular=0 when not provided
-        features4 = np.hstack([features, np.array([[0.0]])])
-        features_scaled = scaler.transform(features4)
+        # Append is_circular=0, was_holding_previously=0 when not provided
+        features5 = np.hstack([features, np.array([[0.0, 0.0]])])
+        features_scaled = scaler.transform(features5)
         prediction = model.predict(features_scaled)[0]
         confidence = model.decision_function(features_scaled)[0]
     else:
@@ -123,23 +124,35 @@ def health():
 @app.post("/analyze")
 def analyze_full(req: AnalyzeRequest):
     """Analyze with full feature set including buyer/seller to compute `is_circular`."""
-    print("[DEBUG] In /analyze endpoint. model is None?", model is None, "scaler is None?", scaler is None)
-    if model is None:
-        return {"error": "Model not loaded"}
+    try:
+        if model is None:
+            return {"error": "Model not loaded"}
 
-    is_circular = 1 if req.buyer_address == req.seller_address else 0
-    features = np.array([[req.price_usd, req.time_since_last_trade, req.sellerFee_amount, is_circular]])
+        # Force type conversion before passing to model
+        price_usd = float(req.price_usd)
+        time_since_last_trade = float(req.time_since_last_trade)
+        sellerFee_amount = float(req.sellerFee_amount)
 
-    if scaler is not None:
-        features_scaled = scaler.transform(features)
-        prediction = model.predict(features_scaled)[0]
-        confidence = model.decision_function(features_scaled)[0]
-    else:
-        prediction = model.predict(features)[0]
-        confidence = model.decision_function(features)[0]
+        # Explicit circular logic (case-insensitive, strip whitespace)
+        buyer = (req.buyer_address or "").strip().lower()
+        seller = (req.seller_address or "").strip().lower()
+        is_circular = 1 if buyer == seller else 0
+        was_holding = float(getattr(req, 'was_holding_previously', 0) or 0)
 
-    return {
-        "is_wash_trade": bool(prediction == -1),
-        "risk_score": float(confidence),
-        "status": "HIGH RISK" if prediction == -1 else "SAFE"
-    }
+        features = np.array([[price_usd, time_since_last_trade, sellerFee_amount, is_circular, was_holding]], dtype=np.float64)
+
+        if scaler is not None:
+            features_scaled = scaler.transform(features)
+            prediction = model.predict(features_scaled)[0]
+            confidence = float(model.decision_function(features_scaled)[0])
+        else:
+            prediction = model.predict(features)[0]
+            confidence = float(model.decision_function(features)[0])
+
+        return {
+            "is_wash_trade": bool(prediction == -1),
+            "risk_score": confidence,
+            "status": "HIGH RISK" if prediction == -1 else "SAFE"
+        }
+    except Exception as e:
+        return {"error": str(e), "status": "ERROR"}

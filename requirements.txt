@@ -4,6 +4,8 @@ uvicorn==0.27.0
 
 # Data Processing
 pandas==2.1.4
+networkx>=3.0
+matplotlib>=3.7
 numpy==1.25.0
 
 # Machine Learning
